@@ -1,0 +1,22 @@
+﻿@page "/eliminar/{Id}"
+@inject HttpClient HttpClient
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@inject IHttpClientFactory ClientFactory
+@inject NavigationManager Navigation
+
+@code {
+    [Parameter]
+    public string Id { get; set; }
+
+    public ML.Result result = new ML.Result();
+
+    protected override async Task OnInitializedAsync()
+    {
+        int IdProducto = int.Parse(Id);
+        result = await HttpClient.DeleteFromJsonAsync<ML.Result>("Producto/Delete?IdProducto=" + IdProducto);
+
+        Navigation.NavigateTo("/modal/" + result.Correct);
+    }
+
+}

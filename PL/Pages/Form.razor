@@ -1,0 +1,104 @@
+﻿@page "/form/{Id}"
+@*@page "/form/{IdProducto: int}"*@
+@inject HttpClient HttpClient
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@inject IHttpClientFactory ClientFactory
+@inject NavigationManager Navigation
+<div class="container">
+    <div class="row">
+        <div class="col-md-12" style="text-align:center;">
+            <h1>Formulario de Producto</h1>
+        </div>
+    </div>
+    <br />
+    <br />
+    <EditForm Model="@producto">
+        <div class="container-fluid">
+            <div class="form-group row mb-3">
+                <div class="col-md-3">
+                    <h5><label>Nombre del Producto:</label></h5>
+                </div>
+                <div class="col-md-6">
+                    <InputText class="form-control" @bind-Value="@producto.Nombre"></InputText>
+                </div>
+            </div>
+            <div class="form-group row mb-3">
+                <div class="col-md-3">
+                    <h5><label>Precio:</label></h5>
+                </div>
+                <div class="col-md-6">
+                    <InputNumber class="form-control" @bind-Value="@producto.Precio"></InputNumber>
+                </div>
+            </div>
+            <div class="form-group row mb-3">
+                <div class="col-md-3">
+                    <h5><label>Categoria:</label></h5>
+                </div>
+                <div class="col-md-6">
+                    <select class="form-control" @bind="@producto.Categoria.IdCategoria">
+                        <option value="">Selecciona una Categoria</option>
+                        @foreach (var category in categorias)
+                        {
+                            <option value="@category.IdCategoria">@category.Nombre</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <br />
+            <br />
+            <div class="form-group row mb-1">
+                <div class="col-md-1">
+                    <button class="btn btn-success" @onclick="Guardar">Guardar</button>
+                </div>
+                <div class="col-md-1">
+                    <a class="btn btn-danger" href="/productos">Regresar</a>
+                </div>
+            </div>
+        </div>
+    </EditForm>
+</div>
+
+
+
+@code {
+    [Parameter]
+    public string Id { get; set; }
+
+    ML.Producto producto = new ML.Producto();
+
+    ML.Result result = new ML.Result();
+
+    public List<ML.Categoria> categorias = new List<ML.Categoria>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        producto.Categoria = new ML.Categoria();
+        if (Id != "0")
+        {
+            int IdProducto = int.Parse(Id);
+            producto = await HttpClient.GetFromJsonAsync<ML.Producto>("Producto/GetById?IdProducto=" + IdProducto);
+            categorias = await HttpClient.GetFromJsonAsync<List<ML.Categoria>>("Categoria/GetAll");
+        }
+        else
+        {
+            categorias = await HttpClient.GetFromJsonAsync<List<ML.Categoria>>("Categoria/GetAll");
+        }
+    }
+
+    private async Task Guardar()
+    {
+        if (producto.IdProducto == 0)
+        {
+            var response = await HttpClient.PostAsJsonAsync<ML.Producto>("Producto/Add", producto);
+            result = response.Content.ReadFromJsonAsync<ML.Result>().Result;
+        }
+        else
+        {
+            var response = await HttpClient.PutAsJsonAsync<ML.Producto>("Producto/Update", producto);
+            result = response.Content.ReadFromJsonAsync<ML.Result>().Result;
+        }
+
+        Navigation.NavigateTo("/modal/" + result.Correct);
+    }
+}
